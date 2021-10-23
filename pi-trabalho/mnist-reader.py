@@ -1,6 +1,6 @@
 # PRETO = 0
 # BRANCO = 255
-import os
+import os, time, random
 
 import cv2 #opencv
 
@@ -16,7 +16,12 @@ from PIL import ImageTk, Image  # pip install Pillow
 
 from mnist import MNIST
 
-import random
+
+# variavel global que vai guardar a img selecionada
+imgPath = None
+img = None
+imgcpy = None
+
 
 janela = tk.Tk()
 largura = 800
@@ -38,7 +43,74 @@ def redimensiona_imagem(imagem):
     imagem = imagem.rotate(180)
     return imagem
 
+
+def trata_img():
+    print("trata_img")
+    
+    
+    # transforma imagem para numpy array com 3 dimensoes (width, height, 3)
+    imgArray = np.array(img.copy(), dtype="int")
+    print(imgArray.shape)
+    print(str(type(imgArray)))
+    
+    # y, x, z = imgArray.shape
+    # print("y = " + str(y) + "  x = " + str(x))
+    # imgArray = imgArray.reshape((y, x))
+    # print(imgArray.shape)
+    # print(str(type(imgArray)))
+
+    # passa a img p/ tons de cinza e a redimension (se necessario)
+    img_NC = Image.open(imgPath).convert('L')
+    if img_NC.width > 560 or img_NC.height > 560: 
+        img_NC = redimensiona_imagem(img_NC)
+    print(img_NC)
+
+    global imgcpy
+    imgcpy = ImageTk.PhotoImage(img_NC.copy())
+    
+    # print("sleep - NC")
+    # time.sleep(2)
+
+    lblImg = tk.Label(image = imgcpy)
+
+    lblImg.place(x = 15, y = 50)
+
+    # transforma a imagem em array numpy (ndarray)
+    imgArray = np.array(img_NC.copy(), dtype="int")
+    print(imgArray.shape)
+    print(str(type(imgArray)))
+
+    toPNG(imgArray, "img-importada")
+    src = cv2.imread('C:/Users/Igor/Desktop/Dropbox/6osem/pi/tp/pi-trabalho/img-importada.png')
+    
+    # filtro gaussiano
+    img_filtroGauss = cv2.GaussianBlur(src, (5, 5), 0) # kernel 3
+
+
+    # printar mais de uma img na msm tela
+    print("subplots")
+    linhas = 1
+    colunas = 2
+    tela = plt.figure(figsize=(10, 5))
+
+    tela.add_subplot(linhas, colunas, 1) # 1a imagem
+    plt.imshow(imgArray, cmap="gray")
+    plt.axis("off")
+    plt.title("img importada - NC")
+    
+
+    tela.add_subplot(linhas, colunas, 2) # 2a imagem
+    plt.imshow(img_filtroGauss, cmap="gray")
+    plt.axis("off")
+    plt.title("img importada - gaussiano")
+
+    # plotar img 3 -> imagem 1 limiarizada
+    # plotar img 4 -> imagem 2 limiarizada
+
+    plt.show()
+
 def carregar_imagem():
+    global imgPath
     imgPath = fd.askopenfilename()
     print(imgPath)
     
@@ -53,11 +125,18 @@ def carregar_imagem():
     print("redimensionou img")
     print("img.width = " + str(img.width))
     print("img.height = " + str(img.height))
-    img = ImageTk.PhotoImage(img)
+    
+    global imgcpy
+    imgcpy = ImageTk.PhotoImage(img.copy())
 
-    lblImg = tk.Label(image = img)
+    # print("em carregar_imagem: " + str(type(imgcpy)))
+
+    lblImg = tk.Label(image = imgcpy)
 
     lblImg.place(x = 15, y = 50)
+
+    # janela.mainloop()
+    # trata_img()
 
 def on_closing():
     if messagebox.askokcancel("Quit", "Do you want to quit?"):
@@ -72,13 +151,15 @@ def inicializa_janela():
     janela.rowconfigure(0, weight=1)
     janela.title("OCR")
     
-    #janela.protocol("WM_DELETE_WINDOW", on_closing) # confirmacao ao fechar a janela
+    # janela.protocol("WM_DELETE_WINDOW", on_closing) # confirmacao ao fechar a janela
 
     # botoes e rotulos - declaracao
     btnCarregarImg = tk.Button(janela, text = "Carregar imagem", bg = "#7E7E7E", fg = "#ffffff", font = ("Calibri", 10), command = lambda : carregar_imagem())
+    btnTratarImg = tk.Button(janela, text = "Tratar imagem", bg = "#7E7E7E", fg = "#ffffff", font = ("Calibri", 10), command = lambda : trata_img())
 
     # botoes e rotulos - posicao
     btnCarregarImg.place(x = 15, y = 20)
+    btnTratarImg.place(x = 135, y = 20)
 
 # "printa" a imagem no terminal
 def printa_imagem(img):
@@ -143,6 +224,7 @@ def main():
     
     inicializa_janela()
 
+    """
     mndata = MNIST('samples')
 
     images, labels = mndata.load_training()
@@ -185,9 +267,9 @@ def main():
     imgMnist2 = np.array(imagem, dtype="int")
     imgMnist2 = imgMnist2.reshape((28,28))
 
-
-    toPNG(imgMnist, "exemplo-mnist")
+    
     toPNG(imgMnist, "temp")
+    toPNG(imgMnist, "exemplo-mnist")
     src = cv2.imread('C:/Users/Igor/Desktop/Dropbox/6osem/pi/tp/pi-trabalho/exemplo-mnist.png')
 
     # filtro gaussiano
@@ -195,7 +277,10 @@ def main():
     print("tipo gaussian3 = " + str(type(gaussian3)))
     print("shape gaussian3 = " + str(gaussian3.shape))
 
-
+    
+    
+    
+    # tentativa de alinhar a img: nao dá certo
     im_src = gaussian3
     pts_src = np.array([[0, 0], [0, 28], [28, 0],[28, 28]])
     im_dst = gaussian3#cv2.imread('temp.png')
@@ -205,7 +290,9 @@ def main():
     cv2.imshow("Source Image", im_src)
     cv2.imshow("Destination Image", im_dst)
     cv2.imshow("Warped Source Image", im_out)
+    
 
+    
     # filtro mediana
     mediana = cv2.medianBlur(src, 3)
 
@@ -298,6 +385,8 @@ def main():
     plt.axis("off")
     plt.title("img limiarizada - blur kernel 3")
 
+    
+
     plt.show()
     
     print("Gaussiano:")
@@ -355,12 +444,13 @@ def main():
     #printa_imagem(imgLimiarizada)
     
     #print(type(imgLimiarizada))
-
+    """
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+    
+    janela.mainloop()
 
-    # janela.mainloop()
+    
 
 if __name__ == "__main__":
     main()
-
