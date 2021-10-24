@@ -1,5 +1,10 @@
 # PRETO = 0
 # BRANCO = 255
+import imageio
+# from keras.preprocessing.image import save_img
+
+# from scipy.misc import imsave , imshow, imread
+
 import os, time, random
 
 import cv2 #opencv
@@ -27,20 +32,32 @@ janela = tk.Tk()
 largura = 800
 altura = 600
 
-def redimensiona_imagem(imagem):
-    if imagem.width > 504:
-        if imagem.height > 504:
-            imagem = imagem.resize((504, 504))
-        else: imagem = imagem.resize((504, imagem.height))
+
+def num_digitos(imagem):
+    numLinhas, numColunas = imagem.shape
+
+    isDigito = False
+    numDigitos = 0
+    j = 0
+    
+
+    return numDigitos
+
+def redimensiona_imagem(imagem, width=504, height=504):
+    
+    if imagem.width > width:
+        if imagem.height > height:
+            imagem = imagem.resize((width, height))
+        else: imagem = imagem.resize((width, imagem.height))
     else:
-        if imagem.height > 504:
-            imagem = imagem.resize((imagem.width, 504))
+        if imagem.height > height:
+            imagem = imagem.resize((imagem.width, height))
     print("redimensiona_imagem")
     print("imagem.width = " + str(imagem.width))
     print("imagem.height = " + str(imagem.height))
 
     # imagem fica de ponta-cabeça, girar ela p/ orientacao normal
-    imagem = imagem.rotate(180)
+    # imagem = imagem.rotate(180)
     return imagem
 
 
@@ -49,9 +66,9 @@ def trata_img():
     
     
     # transforma imagem para numpy array com 3 dimensoes (width, height, 3)
-    imgArray = np.array(img.copy(), dtype="int")
-    print(imgArray.shape)
-    print(str(type(imgArray)))
+    #imgArray = np.array(img.copy(), dtype="int")
+    #print(imgArray.shape)
+    #print(str(type(imgArray)))
     
     # y, x, z = imgArray.shape
     # print("y = " + str(y) + "  x = " + str(x))
@@ -59,9 +76,9 @@ def trata_img():
     # print(imgArray.shape)
     # print(str(type(imgArray)))
 
-    # passa a img p/ tons de cinza e a redimension (se necessario)
+    # passa a img p/ tons de cinza e a redimensiona (se necessario)
     img_NC = Image.open(imgPath).convert('L')
-    if img_NC.width > 560 or img_NC.height > 560: 
+    if img_NC.width > 504 or img_NC.height > 504: 
         img_NC = redimensiona_imagem(img_NC)
     print(img_NC)
 
@@ -83,29 +100,103 @@ def trata_img():
     toPNG(imgArray, "img-importada")
     src = cv2.imread('C:/Users/Igor/Desktop/Dropbox/6osem/pi/tp/pi-trabalho/img-importada.png')
     
+    """
+    # -------------------- fourier ------------------- #
+    ibagem = cv2.imread("C:/Users/Igor/Desktop/Dropbox/6osem/pi/tp/pi-trabalho/img-importada.png")[:,:,:3]
+    imggray = np.mean(ibagem, -1)
+    imfft = np.fft.fft2(imggray)
+    mags = np.abs(np.fft.fftshift(imfft))
+    angles = np.angle(np.fft.fftshift(imfft))
+    visual = np.log(mags)
+    visual2 = (visual - visual.min()) / (visual.max() - visual.min())*255 # essa eh a transf. de fourier da imagem
+    imageio.imwrite("C:/Users/Igor/Desktop/Dropbox/6osem/pi/tp/pi-trabalho/fft.jpg",  visual2  )
+
+    
+    mask = cv2.imread("C:/Users/Igor/Desktop/Dropbox/6osem/pi/tp/pi-trabalho/mascara.jpg")[:,:,:3]
+    mask_jpg = Image.open("C:/Users/Igor/Desktop/Dropbox/6osem/pi/tp/pi-trabalho/mascara.jpg")
+    
+
+    if mask_jpg.width > img_NC.width or mask_jpg.height > img_NC.height: 
+        mask_jpg = redimensiona_imagem(mask_jpg, img_NC.width, img_NC.height)
+
+    mask_numpyArray = np.array(mask_jpg.copy(), dtype="int")
+
+
+    mask = (np.mean(mask_numpyArray,-1) > 20)
+    visual[mask] = np.mean(visual)
+
+    newmagsshift = np.exp(visual)
+    newffts = newmagsshift * np.exp(1j*angles)
+    newfft = np.fft.ifftshift(newffts)
+    imrev = np.fft.ifft2(newfft)
+    newim2 = 255 - np.abs(imrev).astype(np.uint8)
+    imageio.imwrite("C:/Users/Igor/Desktop/Dropbox/6osem/pi/tp/pi-trabalho/fftimg2.jpg",  newim2  )
+
+    toPNG(newim2, "img-posFourier")
+    src2 = cv2.imread('C:/Users/Igor/Desktop/Dropbox/6osem/pi/tp/pi-trabalho/img-posFourier.png')
+    img_filtroGauss_fourier = cv2.GaussianBlur(src2, (5, 5), 0) # kernel 5
+    # -------------------- fournier ------------------- #
+    """
+    
     # filtro gaussiano
-    img_filtroGauss = cv2.GaussianBlur(src, (5, 5), 0) # kernel 3
+    img_filtroGauss = cv2.GaussianBlur(src, (5, 5), 0) # kernel 5
 
 
     # printar mais de uma img na msm tela
     print("subplots")
-    linhas = 1
+    linhas = 2
     colunas = 2
     tela = plt.figure(figsize=(10, 5))
 
+    # --------------------------------------------------------
     tela.add_subplot(linhas, colunas, 1) # 1a imagem
     plt.imshow(imgArray, cmap="gray")
     plt.axis("off")
     plt.title("img importada - NC")
-    
+    print("tipo img1 = " + str(type(imgArray)))
+    # --------------------------------------------------------
 
+    # --------------------------------------------------------
     tela.add_subplot(linhas, colunas, 2) # 2a imagem
     plt.imshow(img_filtroGauss, cmap="gray")
     plt.axis("off")
     plt.title("img importada - gaussiano")
+    print("tipo img2 = " + str(type(img_filtroGauss)))
+    # --------------------------------------------------------
 
-    # plotar img 3 -> imagem 1 limiarizada
-    # plotar img 4 -> imagem 2 limiarizada
+    # --------------------------------------------------------
+    # img 3 -> imagem 1 limiarizada
+    img_NC = fromPNG(imgArray) # transforma de PNG p/ grayscale
+    hist = cv2.calcHist([img_NC], [0], None, [256], [0,256])    
+    if np.argmax(hist) == 0: # se o fundo eh preto
+        img_NC = cv2.bitwise_not(img_NC) # faz fundo branco e objeto preto
+    
+    limiar, imgLimiarizada_NC = cv2.threshold(img_NC, 0, 255, cv2.THRESH_OTSU)
+
+    tela.add_subplot(linhas, colunas, 3) # 3a imagem
+    plt.imshow(imgLimiarizada_NC, cmap="gray")
+    plt.axis("off")
+    plt.title("img importada - limiarizada")
+    # --------------------------------------------------------
+
+    # --------------------------------------------------------
+    # img 4 -> imagem 2 limiarizada
+    imgFiltroGauss_NC = fromPNG(img_filtroGauss) # transforma de PNG p/ grayscale
+    hist = cv2.calcHist([imgFiltroGauss_NC], [0], None, [256], [0,256])    
+    if np.argmax(hist) == 0: # se o fundo eh preto
+        imgFiltroGauss_NC = cv2.bitwise_not(imgFiltroGauss_NC) # faz fundo branco e objeto preto
+    
+    limiar, imgLimiarizada_Gauss_NC = cv2.threshold(imgFiltroGauss_NC, 0, 255, cv2.THRESH_OTSU)
+
+    
+    tela.add_subplot(linhas, colunas, 4) # 4a imagem
+    plt.imshow(imgLimiarizada_Gauss_NC, cmap="gray")
+    plt.axis("off")
+    plt.title("img importada - gauss limiarizada")
+    # --------------------------------------------------------
+
+    num_digitos(imgLimiarizada_Gauss_NC)
+
 
     plt.show()
 
