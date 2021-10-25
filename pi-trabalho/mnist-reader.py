@@ -269,7 +269,8 @@ def projHorizontal(img):
   
     projecao_horizontal = np.sum(img, axis = 1) 
   
-    return projecao_horizontal
+    # return projecao_horizontal
+    return np.sum(img, axis = 1) 
 
 # retorna um vetor que representa a projecao vertical da imagem.
 def projVertical(img):
@@ -281,7 +282,8 @@ def projVertical(img):
   
     projecao_vertical = np.sum(img, axis = 0)
   
-    return projecao_vertical
+    #return projecao_vertical
+    return np.sum(img, axis = 0)
 
 def toPNG(img, nomeImagem):
     Image.fromarray((img * 255)).save(nomeImagem + ".png")
@@ -313,9 +315,9 @@ def inverteImagem(img):
 
 def main():
     
-    inicializa_janela()
+    #inicializa_janela()
 
-    """
+    
     mndata = MNIST('samples')
 
     images, labels = mndata.load_training()
@@ -327,7 +329,9 @@ def main():
     # print("index = " + str(index))
     # print(mndata.display(images[index])) # printa "estilizado"
 
-    print(images[index]) # printa em NC
+    # print(images[index]) # printa em NC
+
+    
     
     imagem = images[index].copy()
 
@@ -344,13 +348,13 @@ def main():
             imagem[idx] = 0
 
     print()
-    print(imagem)
+    # print(imagem)
     print()
     print()
     print("index = " + str(index))
 
     # converte a imagem mnist de lista p/ np.array
-    imgMnist = np.array(images[6736], dtype="int")
+    imgMnist = np.array(images[index], dtype="int")
     imgMnist = imgMnist.reshape((28,28))
     # plt.imshow(imgMnist, cmap="gray")
     # plt.show()
@@ -358,10 +362,19 @@ def main():
     imgMnist2 = np.array(imagem, dtype="int")
     imgMnist2 = imgMnist2.reshape((28,28))
 
-    
-    toPNG(imgMnist, "temp")
     toPNG(imgMnist, "exemplo-mnist")
     src = cv2.imread('C:/Users/Igor/Desktop/Dropbox/6osem/pi/tp/pi-trabalho/exemplo-mnist.png')
+
+    print("type imgMnist = " + str(type(imgMnist)))
+    print(imgMnist.shape)
+   
+    imgMnist_aux = fromPNG(src.copy())
+    hist_mnist = cv2.calcHist([imgMnist_aux], [0], None, [256], [0,256]) 
+    if np.argmax(hist_mnist) == 0: # se o fundo eh preto
+        src = imgMnist = cv2.bitwise_not(imgMnist_aux) # faz fundo branco e objeto preto
+    
+    #toPNG(imgMnist, "temp")
+    
 
     # filtro gaussiano
     gaussian3 = cv2.GaussianBlur(src, (3, 3), 0) # kernel 3
@@ -372,18 +385,26 @@ def main():
     
     
     # tentativa de alinhar a img: nao dá certo
-    im_src = gaussian3
-    pts_src = np.array([[0, 0], [0, 28], [28, 0],[28, 28]])
-    im_dst = gaussian3#cv2.imread('temp.png')
-    pts_dst = np.array([[14, 14], [14, 0], [0, 14], [0, 0]])
-    h, status = cv2.findHomography(pts_src, pts_dst)
-    im_out = cv2.warpPerspective(im_src, h, (im_dst.shape[1],im_dst.shape[0]))
-    cv2.imshow("Source Image", im_src)
-    cv2.imshow("Destination Image", im_dst)
-    cv2.imshow("Warped Source Image", im_out)
+    # im_src = gaussian3
+    # pts_src = np.array([[0, 0], [0, 28], [28, 0],[28, 28]])
+    # im_dst = gaussian3#cv2.imread('temp.png')
+    # pts_dst = np.array([[14, 14], [14, 0], [0, 14], [0, 0]])
+    # h, status = cv2.findHomography(pts_src, pts_dst)
+    # im_out = cv2.warpPerspective(im_src, h, (im_dst.shape[1],im_dst.shape[0]))
+    # cv2.imshow("Source Image", im_src)
+    # cv2.imshow("Destination Image", im_dst)
+    # cv2.imshow("Warped Source Image", im_out)
     
+    print("src:" + str(type(src)))
+    print(src)
+    print("imgMnist:"+ str(type(imgMnist)))
+    print(imgMnist)
 
-    
+    pHorz = projHorizontal(imgMnist.copy())
+    pVert = projVertical(imgMnist.copy())
+    projecoes = np.concatenate((pHorz, pVert))
+
+
     # filtro mediana
     mediana = cv2.medianBlur(src, 3)
 
@@ -430,6 +451,8 @@ def main():
     plt.title("gaussiano kernel 3")
 
     img_gauss3_NC = fromPNG(gaussian3) # transforma de PNG p/ grayscale
+    print("type img_gauss3_NC = " + str(type(img_gauss3_NC)))
+    print(img_gauss3_NC.shape)
     hist = cv2.calcHist([img_gauss3_NC], [0], None, [256], [0,256])    
     if np.argmax(hist) == 0: # se o fundo eh preto
         img_gauss3_NC = cv2.bitwise_not(img_gauss3_NC) # faz fundo branco e objeto preto
@@ -499,13 +522,8 @@ def main():
     print("limiar = " + str(limiar))
 
 
-    pvert = projVertical(imgLimiarizada.copy())
-    phorz = projHorizontal(imgLimiarizada.copy())
-    projecoes = np.concatenate((pvert, phorz))
-
-
-    print(pvert)
-    print(phorz)
+    # pvert = projVertical(imgLimiarizada.copy())
+    # phorz = projHorizontal(imgLimiarizada.copy())
 
 
 
@@ -535,11 +553,11 @@ def main():
     #printa_imagem(imgLimiarizada)
     
     #print(type(imgLimiarizada))
-    """
+    
     cv2.waitKey(0)
     cv2.destroyAllWindows()
     
-    janela.mainloop()
+    # janela.mainloop()
 
     
 
