@@ -1,9 +1,18 @@
-import os, time, random, cv2 #opencv
+# Trabalho Prático - Parte 1
+# Disciplina: Processamento de Imagens
+# Professor: Alexei Manso Correa Machado
+# Grupo:
+# Igor Marques Reis
+# Lucas Spartacus Vieira Carvalho
+# Rafael Mourão Cerqueira Figueiredo
+
+import pt2 # parte 2 do trabalho (classificar os digitos)
+import os, math, time, random, cv2 #opencv
 import numpy as np
 import tkinter as tk
 from matplotlib import pyplot as plt
 from tkinter import filedialog as fd
-from tkinter import messagebox
+# from tkinter import messagebox
 from PIL import ImageTk, Image  # pip install Pillow
 from mnist import MNIST
 
@@ -70,7 +79,7 @@ def tira_limiar(inv):
     imagem_limiarizada = im.copy()
     plota_img(im)
 
-# Recorta cada digito da imagem e os exibe
+# Recorta cada digito da imagem, os exibe e tira suas projecoes
 def acha_contorno():
     global img, imagem_limiarizada
     
@@ -98,17 +107,22 @@ def acha_contorno():
     digitos_np = np.array(digitos)
     num_digitos = len(digitos_np)
     
+    # mostra os digitos
     numLinhas = num_digitos/2
     numColunas = num_digitos/2
 
     plt.rcParams["figure.figsize"] = [5.0, 3.50]
     plt.rcParams["figure.autolayout"] = True
+    plt.rc('axes.spines',top=False,bottom=False,left=False,right=False)
+    plt.rc('axes',facecolor=(1,1,1,0),edgecolor=(1,1,1,0))
+    plt.rc(('xtick','ytick'),color=(1,1,1,0))
 
     for idx, digito in enumerate(digitos_np, 1):
         plt.subplot(numLinhas, numColunas, idx)
         plt.imshow(digito, cmap="gray")
     plt.show()
 
+    # tira projecoes dos digitos
     global projecoes_digitos
     projecoes_digitos = []
     for i in range(num_digitos):
@@ -117,6 +131,7 @@ def acha_contorno():
     print(digitos_np[5])
     print(projecoes_digitos[5])
 
+# Obtem path da imagem e a exibe na interface
 def carregar_imagem():
     global imgPath
     imgPath = fd.askopenfilename()
@@ -127,11 +142,13 @@ def carregar_imagem():
 
     plota_img(img)
 
+# Exclui o arquivo temp ao fechar o programa
 def on_closing():
     if os.path.isfile("tmp.png"):
         os.remove("tmp.png")
     janela.destroy()
 
+# Seta parametros da interface grafica
 def inicializa_janela():
 
     # parametros da interface grafica
@@ -173,30 +190,45 @@ def main():
     
     mndata = MNIST('samples')
 
-    mnistTreino, lbl_mnistTreino = mndata.load_training()
-    mnistTeste, lbl_mnistTeste = mndata.load_testing()
+    mnist_treino, lbl_mnist_treino = mndata.load_training()
+    mnist_teste, lbl_mnist_teste = mndata.load_testing()
 
     projecoes_treino_mnist = []
     projecoes_teste_mnist = []
-
-    index = random.randrange(0, len(mnistTreino))  # choose an index ;-)
 
     print()
     
     # converte imagens para numpy.array
     # aplica filtro e tira suas projecoes
-    for i in range(len(mnistTreino)):
-        mnistTreino[i] = np.array(mnistTreino[i], dtype="uint8").reshape((28,28))
-        mnistTreino[i] = cv2.GaussianBlur(mnistTreino[i], (3,3), 0) # filtro gaussiano, kernel 3
-        projecoes_treino_mnist.append(np.concatenate((projHorizontal(mnistTreino[i].copy()), projVertical(mnistTreino[i].copy()))))
+    for i in range(len(mnist_treino)):
+        mnist_treino[i] = np.array(mnist_treino[i], dtype="uint8").reshape((28,28))
+        # mnist_treino[i] = 255 - mnist_treino[i]
+        mnist_treino[i] = cv2.GaussianBlur(mnist_treino[i], (3,3), 0) # filtro gaussiano, kernel 3
+        projecoes_treino_mnist.append(np.concatenate((projHorizontal(mnist_treino[i].copy()), projVertical(mnist_treino[i].copy()))))
 
 
-    for i in range(len(mnistTeste)):
-        mnistTeste[i] = np.array(mnistTeste[i], dtype="uint8").reshape((28,28))
-        mnistTeste[i] = cv2.GaussianBlur(mnistTeste[i], (3,3), 0) # filtro gaussiano, kernel 3
-        projecoes_teste_mnist.append(np.concatenate((projHorizontal(mnistTeste[i].copy()), projVertical(mnistTeste[i].copy()))))
+    for i in range(len(mnist_teste)):
+        mnist_teste[i] = np.array(mnist_teste[i], dtype="uint8").reshape((28,28))
+        # mnist_teste[i] = 255 - mnist_teste[i]
+        mnist_teste[i] = cv2.GaussianBlur(mnist_teste[i], (3,3), 0) # filtro gaussiano, kernel 3
+        projecoes_teste_mnist.append(np.concatenate((projHorizontal(mnist_teste[i].copy()), projVertical(mnist_teste[i].copy()))))
     
-    
+
+    pt2.svm(np.array(mnist_teste), np.array(projecoes_treino_mnist), np.array(lbl_mnist_treino), 
+            np.array(mnist_teste), np.array(projecoes_teste_mnist), np.array(lbl_mnist_teste))
+
+
+
+
+    # idxtreino = random.randrange(0, len(mnist_treino))
+    # idxteste = random.randrange(0, len(mnist_teste))
+    # plt.imshow(mnist_treino[idxtreino], cmap="gray")
+    # plt.show()
+    # plt.imshow(mnist_treino[idxteste], cmap="gray")
+    # plt.show()
+
+
+
     cv2.waitKey(0)
     cv2.destroyAllWindows()
     

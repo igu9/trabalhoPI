@@ -1,9 +1,0 @@
-indices das imagens com ruido
-42336 (sepa)
-39843 -> 1 "tombado". ver oq o filtro vai fazer c ela 
-11978
-54050
-58133
-4955
-2863
-6736 (numero um tombado, testar funcao q alinha nele)
