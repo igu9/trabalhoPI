@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from sklearn.svm import SVC
 from sklearn import metrics
 from datetime import datetime
+from tkinter import messagebox
 
 # Variáveis globais
 digitos_preditos_svm = None
@@ -57,10 +58,15 @@ def treina_svm(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_
     seaborn.heatmap(matriz_confusao, annot=True, annot_kws={"size":16},  fmt='g')
     plt.savefig("matriz_confusao_svm.png")
 
+    tempo_formatado = formata_tempo( str(t_fim-t_inicio) )
+
     # Mede acuracia da svm
     acuracia = metrics.accuracy_score(rotulos_teste, digitos_preditos)
     print("acc ", acuracia)
-    print("Tempo para treinar a SVM = ", formata_tempo( str(t_fim-t_inicio) ))
+    print("Tempo para treinar a SVM = ", tempo_formatado )
+
+    # Abre pop-up com tempo de treinamento
+    messagebox.showinfo(title="Tempo decorrido", message="Tempo para treinar a SVM = {}".format(tempo_formatado))
 
 # Método para rodar a SVM na imagem de entrada:
 def roda_svm(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_teste, proj_digitos_imagem):
@@ -72,11 +78,17 @@ def roda_svm(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_te
     svm_treinada = pickle.load( open("svm_treinada.dat", "rb"))
 
     # Rodar svm 
+    t_inicio = datetime.now()
     digitos_preditos = svm_treinada.predict( tf.keras.utils.normalize(proj_digitos_imagem) )
-    
+    t_fim = datetime.now()
+
+    tempo_formatado = formata_tempo( str(t_fim-t_inicio) )
     # Armazena resultado obtido
     global digitos_preditos_svm 
     digitos_preditos_svm = digitos_preditos
+
+    # Abre pop-up com tempo de treinamento
+    messagebox.showinfo(title="Tempo decorrido", message="Tempo para rodar a SVM = {}".format(tempo_formatado))
 
 # Método para treinar o MLP:
 def treina_mlp(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_teste, epocas):
@@ -116,8 +128,12 @@ def treina_mlp(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_
     # Mede loss e acuracia do mlp
     loss, acuracia = mlp.evaluate(tf.keras.utils.normalize(proj_digitos_teste), rotulos_teste)
 
-    print(loss, acuracia)
-    print("Tempo para treinar o MLP = ", formata_tempo( str(t_fim-t_inicio) ))
+    tempo_formatado = formata_tempo( str(t_fim-t_inicio) )
+
+    print("Tempo para treinar o MLP = ", tempo_formatado )
+
+    # Abre pop-up com tempo de treinamento
+    messagebox.showinfo(title="Tempo decorrido", message="Tempo para treinar o MLP = {}".format(tempo_formatado))
 
 # Método para rodar o MLP na imagem de entrada:
 def roda_mlp(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_teste, proj_digitos_imagem, epocas):
@@ -129,11 +145,18 @@ def roda_mlp(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_te
     mlp_treinado = tf.keras.models.load_model("mlp_treinada")
 
     # Roda o mlp
+    t_inicio = datetime.now()
     digitos_preditos = mlp_treinado.predict( tf.keras.utils.normalize(proj_digitos_imagem) )
+    t_fim = datetime.now()
+
+    tempo_formatado = formata_tempo( str(t_fim-t_inicio) )
 
     # Interpretar e armazenar resultado obtido
     global digitos_preditos_mlp
     for digit in digitos_preditos: digitos_preditos_mlp.append( np.argmax(digit) )
+
+    # Abre pop-up com tempo de treinamento
+    messagebox.showinfo(title="Tempo decorrido", message="Tempo para rodar o MLP = {}".format(tempo_formatado))
 
 
 def main():
