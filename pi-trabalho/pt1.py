@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Trabalho Prático - Parte 1
 # Disciplina: Processamento de Imagens
 # Professor: Alexei Manso Correa Machado
@@ -7,7 +9,7 @@
 # Rafael Mourão Cerqueira Figueiredo
 
 import pt2 # parte 2 do trabalho (classificar os digitos)
-import os, math, time, random, cv2 #opencv
+import os, cv2 #opencv
 import numpy as np
 import tkinter as tk
 from matplotlib import pyplot as plt
@@ -32,7 +34,6 @@ projecoes_teste_mnist = []  # projecoes mnist - base de teste
 lbl_mnist_teste = []        # rotulos mnist - base de treino
 projecoes_digitos = []      # projecoes dos digitos da imagem importada
 digitos_np = []             # numpy array com os digitos recortados da imagem
-# epocas = None               #numero de epocas (epochs) do mlp
 
 # Metodo que permite exibir a imagem na interface grafica
 def toPNG(img, nomeImagem):
@@ -54,7 +55,8 @@ def redimensiona_imagem(imagem, width=504, height=504):
 def plota_img(imagem_npArray):
     toPNG(imagem_npArray, "tmp.png")
 
-    imagem_tk = Image.open(os.getcwd()+"\\tmp.png")
+    # imagem_tk = Image.open( os.getcwd()+"\\tmp.png" )
+    imagem_tk = Image.open( os.path.join(os.getcwd(), "tmp.png") )
 
     if imagem_tk.width > 504 or imagem_tk.height > 504:
         imagem_tk = redimensiona_imagem(imagem_tk)
@@ -82,7 +84,7 @@ def mostra_digitos(titulos_digitos_np):
 
     for idx, digito in enumerate(digitos_np, 1):
         fig = plt.subplot(numLinhas, numColunas, idx)
-        # fig.title.set_text( str(titulos_digitos_np[ idx-1 ]) )
+        fig.title.set_text( str(titulos_digitos_np[ idx-1 ]) )
         plt.imshow(digito, cmap="gray")
     plt.show()
 
@@ -93,7 +95,7 @@ def tira_limiar(inv):
     img_limiar_NC = cv2.cvtColor(img_limiar, cv2.COLOR_BGR2GRAY)
 
     # filtro gaussiano
-    img_filtroGauss = cv2.GaussianBlur(img_limiar_NC.copy(), (7, 7), 0) # kernel 7
+    img_filtroGauss = cv2.GaussianBlur(img_limiar_NC.copy(), (5, 5), 0) # kernel 7
 
     if inv: limiar, im = cv2.threshold(img_filtroGauss.copy(), 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)
     else: limiar, im = cv2.threshold(img_filtroGauss.copy(), 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY)
@@ -198,18 +200,21 @@ def roda_svm():
     # rodar svm:
     pt2.roda_svm( np.array(projecoes_treino_mnist), np.array(lbl_mnist_treino), np.array(projecoes_teste_mnist), np.array(lbl_mnist_teste), np.array(projecoes_digitos) )
 
-    # imprimir resultados obtidos na interface grafica:
-    # plt.close() # fecha a janela ja aberta do pyplot (se houver)
-    # mostra_digitos( np.array( map(str, pt2.digitos_preditos_svm) ) )
-    print(pt2.digitos_preditos_svm)
+    # imprimir resultados obtidos na interface:
+    plt.close() # fecha a janela ja aberta do pyplot (se houver)
+    mostra_digitos( pt2.digitos_preditos_svm )
 
 # Invoca o metodo que roda a MLP na parte 2
 def roda_mlp():
+    # rodar mlp:
     epocas = askinteger("Epochs", "Número de épocas (epochs) do MLP")
     pt2.roda_mlp( np.array(projecoes_treino_mnist), np.array(lbl_mnist_treino), np.array(projecoes_teste_mnist), np.array(lbl_mnist_teste), np.array(projecoes_digitos), epocas )
 
-    print(pt2.digitos_preditos_mlp)
-    # print(type(pt2.digitos_preditos_mlp))
+    # imprimir resultados obtidos na interface:
+    plt.close()
+    plt.close() # fecha a janela ja aberta do pyplot (se houver)
+    mostra_digitos( pt2.digitos_preditos_mlp )
+
 
 def main():
     global projecoes_treino_mnist, projecoes_teste_mnist, lbl_mnist_treino, lbl_mnist_teste
@@ -248,8 +253,6 @@ def main():
     cv2.destroyAllWindows()
     
     janela.mainloop()
-
-    
 
 if __name__ == "__main__":
     main()

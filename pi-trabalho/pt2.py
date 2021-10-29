@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Trabalho Prático - Parte 2
 # Disciplina: Processamento de Imagens
 # Professor: Alexei Manso Correa Machado
@@ -6,21 +8,19 @@
 # Lucas Spartacus Vieira Carvalho
 # Rafael Mourão Cerqueira Figueiredo
 
-import sys, random, pickle, os
+import pickle, os, seaborn
+import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
-import tensorflow as tf
-# from tensorflow import keras
 from sklearn.svm import SVC
 from sklearn import metrics
 from datetime import datetime
 
-
-
+# Variáveis globais
 digitos_preditos_svm = None
-digitos_preditos_mlp = None
+digitos_preditos_mlp = []
 
-
+# Metodo para formatacao dos tempos de execucao:
 def formata_tempo(tempo_execucao):
     tempo_formatado = ""
     aux = ["h", "min"]
@@ -34,6 +34,7 @@ def formata_tempo(tempo_execucao):
 
     return tempo_formatado
 
+# Metodo para treinar a SVM:
 def treina_svm(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_teste):
     x_treino = tf.keras.utils.normalize(proj_digitos_treino) # normaliza projecoes
     y_treino = rotulos_treino
@@ -51,15 +52,18 @@ def treina_svm(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_
     # Testa svm treinada
     digitos_preditos = svm.predict( tf.keras.utils.normalize(proj_digitos_teste) )
 
-    # Calcula matriz de confusao
+    # Calcular matriz de confusao:
     matriz_confusao = metrics.confusion_matrix(rotulos_teste, digitos_preditos)
+    plt.figure( figsize=(10, 10) )
+    seaborn.heatmap(matriz_confusao, annot=True, annot_kws={"size":16},  fmt='g')
+    plt.show()
 
     # Mede acuracia da svm
     acuracia = metrics.accuracy_score(rotulos_teste, digitos_preditos)
     print("acc ", acuracia)
     print("Tempo para treinar a SVM = ", formata_tempo( str(t_fim-t_inicio) ))
-    
 
+# Método para rodar a SVM na imagem de entrada:
 def roda_svm(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_teste, proj_digitos_imagem):
     # Se a svm ainda nao foi treinada, entao a treina
     if os.path.isfile("svm_treinada.dat") == False:
@@ -75,7 +79,7 @@ def roda_svm(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_te
     global digitos_preditos_svm 
     digitos_preditos_svm = digitos_preditos
 
-
+# Método para treinar o MLP:
 def treina_mlp(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_teste, epocas):
     x_treino = tf.keras.utils.normalize(proj_digitos_treino) # normaliza projecoes
     y_treino = rotulos_treino
@@ -100,8 +104,16 @@ def treina_mlp(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_
     # Salva mlp treinado
     mlp.save("mlp_treinada")
 
-    # Testa mlp treinado
-    digitos_preditos = mlp.predict( tf.keras.utils.normalize(proj_digitos_teste) )
+    # Testar mlp treinado
+    digitos_preditos = []
+    result = mlp.predict( tf.keras.utils.normalize(proj_digitos_teste) )
+    for digit in result: digitos_preditos.append( np.argmax(digit) ) # interpreta resultados do MLP
+
+    # Calcular matriz de confusao:
+    matriz_confusao = metrics.confusion_matrix(rotulos_teste, digitos_preditos)
+    plt.figure( figsize=(10, 10) )
+    seaborn.heatmap(matriz_confusao, annot=True, annot_kws={"size":16},  fmt='g')
+    plt.show()
 
     # Mede loss e acuracia do mlp
     loss, acuracia = mlp.evaluate(tf.keras.utils.normalize(proj_digitos_teste), rotulos_teste)
@@ -109,7 +121,7 @@ def treina_mlp(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_
     print(loss, acuracia)
     print("Tempo para treinar o MLP = ", formata_tempo( str(t_fim-t_inicio) ))
 
-
+# Método para rodar o MLP na imagem de entrada:
 def roda_mlp(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_teste, proj_digitos_imagem, epocas):
     # Se o mlp ainda nao foi treinado, entao o treina
     if os.path.isdir("mlp_treinada") == False:
@@ -121,15 +133,13 @@ def roda_mlp(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_te
     # Roda o mlp
     digitos_preditos = mlp_treinado.predict( tf.keras.utils.normalize(proj_digitos_imagem) )
 
-    # Armazena resultado obtido
-    global digitos_preditos_mlp 
-    digitos_preditos_mlp = digitos_preditos
+    # Interpretar e armazenar resultado obtido
+    global digitos_preditos_mlp
+    for digit in digitos_preditos: digitos_preditos_mlp.append( np.argmax(digit) )
 
 
 def main():
     print("main")
-    
-
 
 if __name__ == '__main__':
     main()
