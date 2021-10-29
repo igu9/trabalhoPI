@@ -139,7 +139,9 @@ def acha_contorno():
         digitos_np[i] = 255 - digitos_np[i] # faz fundo branco e digito preto
         projecoes_digitos.append(np.concatenate((projHorizontal(digitos_np[i].copy()), projVertical(digitos_np[i].copy()))))
 
-    mostra_digitos( np.full(digitos_np.shape, "", dtype=str) )
+    titulos = []
+    for digito in digitos_np: titulos.append("")
+    mostra_digitos( titulos )
 
 # Obtem path da imagem e a exibe na interface
 def carregar_imagem():
@@ -201,7 +203,6 @@ def roda_svm():
     pt2.roda_svm( np.array(projecoes_treino_mnist), np.array(lbl_mnist_treino), np.array(projecoes_teste_mnist), np.array(lbl_mnist_teste), np.array(projecoes_digitos) )
 
     # imprimir resultados obtidos na interface:
-    plt.close() # fecha a janela ja aberta do pyplot (se houver)
     mostra_digitos( pt2.digitos_preditos_svm )
 
 # Invoca o metodo que roda a MLP na parte 2
@@ -211,8 +212,6 @@ def roda_mlp():
     pt2.roda_mlp( np.array(projecoes_treino_mnist), np.array(lbl_mnist_treino), np.array(projecoes_teste_mnist), np.array(lbl_mnist_teste), np.array(projecoes_digitos), epocas )
 
     # imprimir resultados obtidos na interface:
-    plt.close()
-    plt.close() # fecha a janela ja aberta do pyplot (se houver)
     mostra_digitos( pt2.digitos_preditos_mlp )
 
 

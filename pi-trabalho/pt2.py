@@ -54,9 +54,8 @@ def treina_svm(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_
 
     # Calcular matriz de confusao:
     matriz_confusao = metrics.confusion_matrix(rotulos_teste, digitos_preditos)
-    plt.figure( figsize=(10, 10) )
     seaborn.heatmap(matriz_confusao, annot=True, annot_kws={"size":16},  fmt='g')
-    plt.show()
+    plt.savefig("matriz_confusao_svm.png")
 
     # Mede acuracia da svm
     acuracia = metrics.accuracy_score(rotulos_teste, digitos_preditos)
@@ -111,9 +110,8 @@ def treina_mlp(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_
 
     # Calcular matriz de confusao:
     matriz_confusao = metrics.confusion_matrix(rotulos_teste, digitos_preditos)
-    plt.figure( figsize=(10, 10) )
     seaborn.heatmap(matriz_confusao, annot=True, annot_kws={"size":16},  fmt='g')
-    plt.show()
+    plt.savefig("matriz_confusao_mlp.png")
 
     # Mede loss e acuracia do mlp
     loss, acuracia = mlp.evaluate(tf.keras.utils.normalize(proj_digitos_teste), rotulos_teste)
