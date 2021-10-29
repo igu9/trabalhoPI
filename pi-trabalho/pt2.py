@@ -6,13 +6,20 @@
 # Lucas Spartacus Vieira Carvalho
 # Rafael Mourão Cerqueira Figueiredo
 
-import sys, random
+import sys, random, pickle, os
 import numpy as np
 import matplotlib.pyplot as plt
+import tensorflow as tf
+# from tensorflow import keras
 from sklearn.svm import SVC
 from sklearn import metrics
 from datetime import datetime
-from tensorflow import keras
+
+
+
+digitos_preditos_svm = None
+digitos_preditos_mlp = None
+
 
 def formata_tempo(tempo_execucao):
     tempo_formatado = ""
@@ -27,46 +34,100 @@ def formata_tempo(tempo_execucao):
 
     return tempo_formatado
 
-# proj_digitos -> lista das projecoes (horiz. e vert.) dos digitos
-def svm(digitos_teste, proj_digitos_teste, rotulos_teste, digitos_treino, proj_digitos_treino, rotulos_treino):
-    t_inicio = datetime.now()
+def treina_svm(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_teste):
+    x_treino = tf.keras.utils.normalize(proj_digitos_treino) # normaliza projecoes
+    y_treino = rotulos_treino
+    
+    # Seta e treina svm
+    svm = SVC(C = 100)
+    t_inicio = datetime.now()   # armazena tempo no inicio do treinamento
+    svm.fit(x_treino, y_treino) # treina svm 
+    t_fim = datetime.now()      # armazena tempo ao final do treinamento
 
-    x_teste, y_teste = keras.utils.normalize(proj_digitos_teste[0:30000]), rotulos_teste[0:30000]
+    # Salva svm treinada
+    filename = "svm_treinada.dat"
+    pickle.dump(svm, open(filename, "wb"))
 
-    funcTransformacao = "poly"
-    svm = SVC(gamma = 0.00001, kernel = funcTransformacao, C = 100)
+    # Testa svm treinada
+    digitos_preditos = svm.predict( tf.keras.utils.normalize(proj_digitos_teste) )
 
+    # Calcula matriz de confusao
+    matriz_confusao = metrics.confusion_matrix(rotulos_teste, digitos_preditos)
 
-
-    svm.fit(x_teste, y_teste) # treina a svm
-    #49742
-    #10663
-
-    # idx = random.randrange(0, len(digitos_teste)) # seleciona um indice aleatorio
-    # print("indice = ", idx)
+    # Mede acuracia da svm
+    acuracia = metrics.accuracy_score(rotulos_teste, digitos_preditos)
+    print("acc ", acuracia)
+    print("Tempo para treinar a SVM = ", formata_tempo( str(t_fim-t_inicio) ))
     
 
-    # digito_predito = svm.predict(np.reshape(proj_digitos_teste[11080], (1,-1))) # testar apenas 1 digito
-    digitos_preditos = svm.predict( keras.utils.normalize(proj_digitos_treino) )
-    print("digitos_preditos len = ", len(digitos_preditos))
+def roda_svm(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_teste, proj_digitos_imagem):
+    # Se a svm ainda nao foi treinada, entao a treina
+    if os.path.isfile("svm_treinada.dat") == False:
+        treina_svm(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_teste)
+
+    # Carrega svm treinada
+    svm_treinada = pickle.load( open("svm_treinada.dat", "rb"))
+
+    # Rodar svm 
+    digitos_preditos = svm_treinada.predict( tf.keras.utils.normalize(proj_digitos_imagem) )
     
+    # Armazena resultado obtido
+    global digitos_preditos_svm 
+    digitos_preditos_svm = digitos_preditos
 
-    acuracia = metrics.accuracy_score(rotulos_treino, digitos_preditos)
-    matriz_confusao = metrics.confusion_matrix(rotulos_treino, digitos_preditos)
-    print("acc ({}) = {}".format(funcTransformacao, acuracia))
 
-    t_fim = datetime.now()
+def treina_mlp(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_teste, epocas):
+    x_treino = tf.keras.utils.normalize(proj_digitos_treino) # normaliza projecoes
+    y_treino = rotulos_treino
+    formato_dados = x_treino[0].shape[0]
+    print("formato_dados =", formato_dados)
 
-    print()
-    tempo_formatado = formata_tempo(str(t_fim-t_inicio))
-    print("datetime - tempo de execução = ", tempo_formatado)
+    # Declara o mlp e suas camadas
+    mlp = tf.keras.models.Sequential()
+    mlp.add(tf.keras.layers.Input(formato_dados))    # camada de input
+    mlp.add(tf.keras.layers.Dense(128, activation = tf.nn.relu))    # primeira hidden layer, com 128 neuronios e relu como funcao de ativacao 
+    mlp.add(tf.keras.layers.Dense(128, activation = tf.nn.relu))    # segunda hidden layer
+    mlp.add(tf.keras.layers.Dense(10, activation = tf.nn.softmax))  # ultima camada, com 10 neuronios (numero de classificacoes possiveis)
 
+    # Parametros de treino do mlp
+    mlp.compile(optimizer = "adam", loss = "sparse_categorical_crossentropy", metrics = ["accuracy"])
+
+    # Treina mlp
+    t_inicio = datetime.now()                       # armazena tempo no inicio do treinamento
+    mlp.fit(x_treino, y_treino, epochs = epocas)    # treina mlp
+    t_fim = datetime.now()                          # armazena tempo no inicio do treinamento
+
+    # Salva mlp treinado
+    mlp.save("mlp_treinada")
+
+    # Testa mlp treinado
+    digitos_preditos = mlp.predict( tf.keras.utils.normalize(proj_digitos_teste) )
+
+    # Mede loss e acuracia do mlp
+    loss, acuracia = mlp.evaluate(tf.keras.utils.normalize(proj_digitos_teste), rotulos_teste)
+
+    print(loss, acuracia)
+    print("Tempo para treinar o MLP = ", formata_tempo( str(t_fim-t_inicio) ))
+
+
+def roda_mlp(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_teste, proj_digitos_imagem, epocas):
+    # Se o mlp ainda nao foi treinado, entao o treina
+    if os.path.isdir("mlp_treinada") == False:
+        treina_mlp(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_teste, epocas)
+
+    # Carrega mlp treinado
+    mlp_treinado = tf.keras.models.load_model("mlp_treinada")
+
+    # Roda o mlp
+    digitos_preditos = mlp_treinado.predict( tf.keras.utils.normalize(proj_digitos_imagem) )
+
+    # Armazena resultado obtido
+    global digitos_preditos_mlp 
+    digitos_preditos_mlp = digitos_preditos
 
 
 def main():
-    # svm()
     print("main")
-    # digitos, rotulos_teste = sys.argv[1], sys.argv[2]
     
 
 

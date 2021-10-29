@@ -12,11 +12,11 @@ import numpy as np
 import tkinter as tk
 from matplotlib import pyplot as plt
 from tkinter import filedialog as fd
-# from tkinter import messagebox
+from tkinter.simpledialog import askinteger
 from PIL import ImageTk, Image  # pip install Pillow
 from mnist import MNIST
 
-# variáveis globais
+# Variáveis globais
 imgPath = None
 img = None
 imagem_limiarizada = None
@@ -26,17 +26,20 @@ lblImg = tk.Label(image = "")
 largura = 800
 altura = 600
 
-projecoes_treino_mnist = []
-projecoes_teste_mnist = []
-projecoes_digitos = []
+projecoes_treino_mnist = [] # projecoes mnist - base de treino
+lbl_mnist_treino = []       # rotulos mnist - base de treino
+projecoes_teste_mnist = []  # projecoes mnist - base de teste
+lbl_mnist_teste = []        # rotulos mnist - base de treino
+projecoes_digitos = []      # projecoes dos digitos da imagem importada
+digitos_np = []             # numpy array com os digitos recortados da imagem
+# epocas = None               #numero de epocas (epochs) do mlp
 
 # Metodo que permite exibir a imagem na interface grafica
 def toPNG(img, nomeImagem):
     cv2.imwrite(nomeImagem, img)
 
 # Redimensiona imagem para que ela caiba na interface grafica
-def redimensiona_imagem(imagem, width=504, height=504):
-    
+def redimensiona_imagem(imagem, width=504, height=504): 
     if imagem.width > width:
         if imagem.height > height:
             imagem = imagem.resize((width, height))
@@ -47,7 +50,7 @@ def redimensiona_imagem(imagem, width=504, height=504):
 
     return imagem
 
-# "Plota" a imagem na interface grafica
+# Plota a imagem na interface grafica
 def plota_img(imagem_npArray):
     toPNG(imagem_npArray, "tmp.png")
 
@@ -57,12 +60,31 @@ def plota_img(imagem_npArray):
         imagem_tk = redimensiona_imagem(imagem_tk)
     imagem_tk = ImageTk.PhotoImage(imagem_tk)
     
-    
     global lblImg
     lblImg.config(image = "")
     lblImg = tk.Label(image = imagem_tk)
     lblImg.image = imagem_tk
     lblImg.place(x = 15, y = 50)
+
+# Mostra os digitos na interface grafica
+def mostra_digitos(titulos_digitos_np):
+    num_digitos = len(digitos_np)
+
+    # mostra os digitos
+    numLinhas = num_digitos/2
+    numColunas = num_digitos/2
+
+    plt.rcParams["figure.figsize"] = [5.0, 3.50]
+    plt.rcParams["figure.autolayout"] = True
+    plt.rc('axes.spines', top=False, bottom=False, left=False, right=False)
+    plt.rc('axes', facecolor=(1,1,1,0), edgecolor=(1,1,1,0) )
+    plt.rc( ('xtick', 'ytick'), color=(1,1,1,0) )
+
+    for idx, digito in enumerate(digitos_np, 1):
+        fig = plt.subplot(numLinhas, numColunas, idx)
+        # fig.title.set_text( str(titulos_digitos_np[ idx-1 ]) )
+        plt.imshow(digito, cmap="gray")
+    plt.show()
 
 # Utiliza Otsu para limiarizar a imagem
 def tira_limiar(inv):
@@ -71,7 +93,7 @@ def tira_limiar(inv):
     img_limiar_NC = cv2.cvtColor(img_limiar, cv2.COLOR_BGR2GRAY)
 
     # filtro gaussiano
-    img_filtroGauss = cv2.GaussianBlur(img_limiar_NC.copy(), (5, 5), 0) # kernel 5
+    img_filtroGauss = cv2.GaussianBlur(img_limiar_NC.copy(), (7, 7), 0) # kernel 7
 
     if inv: limiar, im = cv2.threshold(img_filtroGauss.copy(), 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)
     else: limiar, im = cv2.threshold(img_filtroGauss.copy(), 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY)
@@ -81,7 +103,7 @@ def tira_limiar(inv):
 
 # Recorta cada digito da imagem, os exibe e tira suas projecoes
 def acha_contorno():
-    global img, imagem_limiarizada
+    global img, imagem_limiarizada, digitos_np
     
     contornos, _ = cv2.findContours(imagem_limiarizada.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     img2 = imagem_limiarizada.copy()
@@ -103,33 +125,19 @@ def acha_contorno():
         
         digitos.append(digito_com_margem)
     
+
     # converte para array numpy
     digitos_np = np.array(digitos)
     num_digitos = len(digitos_np)
-    
-    # mostra os digitos
-    numLinhas = num_digitos/2
-    numColunas = num_digitos/2
-
-    plt.rcParams["figure.figsize"] = [5.0, 3.50]
-    plt.rcParams["figure.autolayout"] = True
-    plt.rc('axes.spines',top=False,bottom=False,left=False,right=False)
-    plt.rc('axes',facecolor=(1,1,1,0),edgecolor=(1,1,1,0))
-    plt.rc(('xtick','ytick'),color=(1,1,1,0))
-
-    for idx, digito in enumerate(digitos_np, 1):
-        plt.subplot(numLinhas, numColunas, idx)
-        plt.imshow(digito, cmap="gray")
-    plt.show()
 
     # tira projecoes dos digitos
     global projecoes_digitos
     projecoes_digitos = []
     for i in range(num_digitos):
+        digitos_np[i] = 255 - digitos_np[i] # faz fundo branco e digito preto
         projecoes_digitos.append(np.concatenate((projHorizontal(digitos_np[i].copy()), projVertical(digitos_np[i].copy()))))
 
-    print(digitos_np[5])
-    print(projecoes_digitos[5])
+    mostra_digitos( np.full(digitos_np.shape, "", dtype=str) )
 
 # Obtem path da imagem e a exibe na interface
 def carregar_imagem():
@@ -151,7 +159,7 @@ def on_closing():
 # Seta parametros da interface grafica
 def inicializa_janela():
 
-    # parametros da interface grafica
+    # Parametros da interface grafica:
     janela.geometry(str(largura) + "x" + str(altura))
     janela.columnconfigure(0, weight=1)
     janela.rowconfigure(0, weight=1)
@@ -164,26 +172,47 @@ def inicializa_janela():
     btnLimiar = tk.Button(janela, text = "Limiariza imagem", bg = "#7E7E7E", fg = "#ffffff", font = ("Calibri", 10), command = lambda : tira_limiar(False))
     btnLimiarInvertido = tk.Button(janela, text = "Limiariza imagem - invertido ", bg = "#7E7E7E", fg = "#ffffff", font = ("Calibri", 10), command = lambda : tira_limiar(True))
     btnRecortaDigitos = tk.Button(janela, text = "Recortar dígitos", bg = "#7E7E7E", fg = "#ffffff", font = ("Calibri", 10), command = lambda : acha_contorno())
+    btnRodarSVM = tk.Button(janela, text = "Rodar SVM", bg = "#7E7E7E", fg = "#ffffff", font = ("Calibri", 10), command = lambda : roda_svm())
+    btnRodarMLP = tk.Button(janela, text = "Rodar MLP", bg = "#7E7E7E", fg = "#ffffff", font = ("Calibri", 10), command = lambda : roda_mlp())
 
     # botoes e rotulos - posicao
     btnCarregarImg.place(x = 15, y = 20)
-    btnLimiar.place(x = 135, y = 20)
-    btnLimiarInvertido.place(x = 260, y = 20)
-    btnRecortaDigitos.place(x = 450, y = 20)
+    btnLimiar.place(x = 130, y = 20)
+    btnLimiarInvertido.place(x = 250, y = 20)
+    btnRecortaDigitos.place(x = 430, y = 20)
+    btnRodarSVM.place(x = 540, y = 20)
+    btnRodarMLP.place(x = 625, y = 20)
 
-# retorna um vetor que representa a projecao horizontal da imagem
+# Retorna um vetor que representa a projecao horizontal da imagem
 def projHorizontal(img):
   
     return np.sum(img, axis = 1) 
 
-# retorna um vetor que representa a projecao vertical da imagem.
+# Retorna um vetor que representa a projecao vertical da imagem.
 def projVertical(img):
   
     return np.sum(img, axis = 0)
 
+# Invoca o metodo que roda a SVM na parte 2
+def roda_svm():
+    # rodar svm:
+    pt2.roda_svm( np.array(projecoes_treino_mnist), np.array(lbl_mnist_treino), np.array(projecoes_teste_mnist), np.array(lbl_mnist_teste), np.array(projecoes_digitos) )
+
+    # imprimir resultados obtidos na interface grafica:
+    # plt.close() # fecha a janela ja aberta do pyplot (se houver)
+    # mostra_digitos( np.array( map(str, pt2.digitos_preditos_svm) ) )
+    print(pt2.digitos_preditos_svm)
+
+# Invoca o metodo que roda a MLP na parte 2
+def roda_mlp():
+    epocas = askinteger("Epochs", "Número de épocas (epochs) do MLP")
+    pt2.roda_mlp( np.array(projecoes_treino_mnist), np.array(lbl_mnist_treino), np.array(projecoes_teste_mnist), np.array(lbl_mnist_teste), np.array(projecoes_digitos), epocas )
+
+    print(pt2.digitos_preditos_mlp)
+    # print(type(pt2.digitos_preditos_mlp))
 
 def main():
-    global projecoes_treino_mnist, projecoes_teste_mnist
+    global projecoes_treino_mnist, projecoes_teste_mnist, lbl_mnist_treino, lbl_mnist_teste
 
     inicializa_janela()
 
@@ -202,31 +231,17 @@ def main():
     # aplica filtro e tira suas projecoes
     for i in range(len(mnist_treino)):
         mnist_treino[i] = np.array(mnist_treino[i], dtype="uint8").reshape((28,28))
-        # mnist_treino[i] = 255 - mnist_treino[i]
+        mnist_treino[i] = 255 - mnist_treino[i] # faz fundo branco e digito preto
         mnist_treino[i] = cv2.GaussianBlur(mnist_treino[i], (3,3), 0) # filtro gaussiano, kernel 3
         projecoes_treino_mnist.append(np.concatenate((projHorizontal(mnist_treino[i].copy()), projVertical(mnist_treino[i].copy()))))
 
 
     for i in range(len(mnist_teste)):
         mnist_teste[i] = np.array(mnist_teste[i], dtype="uint8").reshape((28,28))
-        # mnist_teste[i] = 255 - mnist_teste[i]
+        mnist_teste[i] = 255 - mnist_teste[i] # faz fundo branco e digito preto
         mnist_teste[i] = cv2.GaussianBlur(mnist_teste[i], (3,3), 0) # filtro gaussiano, kernel 3
         projecoes_teste_mnist.append(np.concatenate((projHorizontal(mnist_teste[i].copy()), projVertical(mnist_teste[i].copy()))))
     
-
-    pt2.svm(np.array(mnist_teste), np.array(projecoes_treino_mnist), np.array(lbl_mnist_treino), 
-            np.array(mnist_teste), np.array(projecoes_teste_mnist), np.array(lbl_mnist_teste))
-
-
-
-
-    # idxtreino = random.randrange(0, len(mnist_treino))
-    # idxteste = random.randrange(0, len(mnist_teste))
-    # plt.imshow(mnist_treino[idxtreino], cmap="gray")
-    # plt.show()
-    # plt.imshow(mnist_treino[idxteste], cmap="gray")
-    # plt.show()
-
 
 
     cv2.waitKey(0)
