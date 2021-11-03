@@ -208,7 +208,7 @@ def roda_svm():
 # Invoca o metodo que roda a MLP na parte 2
 def roda_mlp():
     # rodar mlp:
-    epocas = askinteger("Epochs", "Número de épocas (epochs) do MLP")
+    epocas = askinteger("Epochs", "Número de épocas (epochs) para o MLP")
     pt2.roda_mlp( np.array(projecoes_treino_mnist), np.array(lbl_mnist_treino), np.array(projecoes_teste_mnist), np.array(lbl_mnist_teste), np.array(projecoes_digitos), epocas )
 
     # imprimir resultados obtidos na interface:
