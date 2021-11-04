@@ -62,10 +62,10 @@ def treina_svm(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_
 
     # Mede acuracia da svm
     acuracia = metrics.accuracy_score(rotulos_teste, digitos_preditos)
-    print("acc ", acuracia)
-    print("Tempo para treinar a SVM = ", tempo_formatado )
+    # print("acc ", acuracia)
+    # print("Tempo para treinar a SVM = ", tempo_formatado )
 
-    # Abre pop-up com tempo de treinamento
+    # Abre pop-up com tempo de treinamento da SVM
     messagebox.showinfo(title="Tempo decorrido", message="Tempo para treinar a SVM = {}".format(tempo_formatado))
 
 # Método para rodar a SVM na imagem de entrada:
@@ -87,7 +87,7 @@ def roda_svm(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_te
     global digitos_preditos_svm 
     digitos_preditos_svm = digitos_preditos
 
-    # Abre pop-up com tempo de treinamento
+    # Abre pop-up com tempo p/ rodar a SVM
     messagebox.showinfo(title="Tempo decorrido", message="Tempo para rodar a SVM = {}".format(tempo_formatado))
 
 # Método para treinar o MLP:
@@ -113,7 +113,7 @@ def treina_mlp(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_
     t_fim = datetime.now()                          # armazena tempo no inicio do treinamento
 
     # Salva mlp treinado
-    mlp.save("mlp_treinada")
+    mlp.save("mlp_treinado")
 
     # Testar mlp treinado
     digitos_preditos = []
@@ -130,9 +130,9 @@ def treina_mlp(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_
 
     tempo_formatado = formata_tempo( str(t_fim-t_inicio) )
 
-    print("Tempo para treinar o MLP = ", tempo_formatado )
+    # print("Tempo para treinar o MLP = ", tempo_formatado )
 
-    # Abre pop-up com tempo de treinamento
+    # Abre pop-up com tempo de treinamento do MLP
     messagebox.showinfo(title="Tempo decorrido", message="Tempo para treinar o MLP = {}".format(tempo_formatado))
 
 # Método para rodar o MLP na imagem de entrada:
@@ -151,7 +151,7 @@ def roda_mlp(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_te
 
     tempo_formatado = formata_tempo( str(t_fim-t_inicio) )
 
-    # Interpretar e armazenar resultado obtido
+    # Guarda os digitos preditos
     global digitos_preditos_mlp
     for digit in digitos_preditos: digitos_preditos_mlp.append( np.argmax(digit) )
 
@@ -160,7 +160,7 @@ def roda_mlp(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_te
 
 
 def main():
-    print("main")
+    print('Este programa é um módulo de outro. Sua execução "por si só" não está definida.')
 
 if __name__ == '__main__':
     main()
