@@ -62,7 +62,7 @@ def treina_svm(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_
 
     # Mede acuracia da svm
     acuracia = metrics.accuracy_score(rotulos_teste, digitos_preditos)
-    # print("acc ", acuracia)
+    print("Acuracia da SVM = ", acuracia)
     # print("Tempo para treinar a SVM = ", tempo_formatado )
 
     # Abre pop-up com tempo de treinamento da SVM
@@ -138,11 +138,11 @@ def treina_mlp(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_
 # Método para rodar o MLP na imagem de entrada:
 def roda_mlp(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_teste, proj_digitos_imagem, epocas):
     # Se o mlp ainda nao foi treinado, entao o treina
-    if os.path.isdir("mlp_treinada") == False:
+    if os.path.isdir("mlp_treinado") == False:
         treina_mlp(proj_digitos_treino, rotulos_treino, proj_digitos_teste, rotulos_teste, epocas)
 
     # Carrega mlp treinado
-    mlp_treinado = tf.keras.models.load_model("mlp_treinada")
+    mlp_treinado = tf.keras.models.load_model("mlp_treinado")
 
     # Roda o mlp
     t_inicio = datetime.now()

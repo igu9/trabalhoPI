@@ -63,12 +63,12 @@ def rotaciona_imagem():
     matriz_rotacao = cv2.getRotationMatrix2D(centro_img, graus, 1.0)
     imagem_rotacionada = cv2.warpAffine(im_aux, matriz_rotacao, im_aux.shape[1::-1], flags=cv2.INTER_LINEAR)
 
-    plota_imagem(imagem_rotacionada)
+    exibe_imagem(imagem_rotacionada)
 
     rotacionou_imagem = True
 
-# Plota a imagem na interface grafica
-def plota_imagem(imagem_npArray):
+# Exibe a imagem na interface grafica
+def exibe_imagem(imagem_npArray):
     toPNG(imagem_npArray, "tmp.png")
 
     imagem_tk = Image.open( os.path.join(os.getcwd(), "tmp.png") )
@@ -106,44 +106,49 @@ def mostra_digitos(titulos_digitos_np):
 # Utiliza Otsu para limiarizar a imagem
 # inv -> flag que indica se o objeto sera branco ou preto (e o fundo, preto ou branco)
 def tira_limiar(inv):
-    global imagem_limiarizada, rotacionou_imagem
+    global img, imagem_limiarizada, rotacionou_imagem
     
     # le a imagem corrente
     if rotacionou_imagem: img_limiar = imagem_rotacionada.copy()
     else: img_limiar = cv2.imread(imgPath) 
     
+    img = img_limiar.copy()
+
     # converte-a para NC
     img_limiar_NC = cv2.cvtColor(img_limiar, cv2.COLOR_BGR2GRAY)
 
     # filtro gaussiano
     img_filtroGauss = cv2.GaussianBlur(img_limiar_NC.copy(), (5, 5), 0) # kernel 5
 
+    # tira o limiar e binariza a imagem
     if inv: limiar, im = cv2.threshold(img_filtroGauss.copy(), 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)
     else: limiar, im = cv2.threshold(img_filtroGauss.copy(), 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY)
 
     imagem_limiarizada = im.copy()
-    plota_imagem(im)
+    exibe_imagem(im)
 
 # Recorta cada digito da imagem, os exibe e tira suas projecoes
 def acha_contorno():
-    global img, imagem_limiarizada, digitos_np
+    global imagem_limiarizada, digitos_np
     
     contornos, _ = cv2.findContours(imagem_limiarizada.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     img2 = imagem_limiarizada.copy()
+    
     digitos = []
     for c in contornos:
         x,y,w,h = cv2.boundingRect(c)
         
         # Faz retangulo delimitando cada digito
         cv2.rectangle(img2, (x,y), (x+w, y+h), color=(255, 255, 255), thickness=2)
-        
+        # cv2.imshow("Dígitos com retângulo circunscritor", img2)
+
         # Guarda posicao do digito na imagem
         digito = imagem_limiarizada[y:y+h, x:x+w]
         
         # Redimensiona o digito p/ (18, 18)
         digito_redimensionado = cv2.resize(digito, (18,18))
         
-        # Adiciona 5px de margem para adequar o digito ao padrao mnist
+        # Adiciona 5px de margem para aproximar o digito ao padrao mnist
         digito_com_margem = np.pad(digito_redimensionado, ((5,5),(5,5)), "constant", constant_values=0)
         
         digitos.append(digito_com_margem)
@@ -158,6 +163,7 @@ def acha_contorno():
     projecoes_digitos = []
     for i in range(num_digitos):
         digitos_np[i] = 255 - digitos_np[i] # faz fundo branco e digito preto
+        # print(digitos_np[i])
         projecoes_digitos.append(np.concatenate((projHorizontal(digitos_np[i].copy()), projVertical(digitos_np[i].copy()))))
 
     titulos = []
@@ -174,7 +180,7 @@ def carregar_imagem():
     global img
     img = cv2.imread(imgPath)
 
-    plota_imagem(img)
+    exibe_imagem(img)
 
 # Exclui o arquivo temp ao fechar o programa
 def on_closing():
@@ -198,7 +204,7 @@ def inicializa_janela():
     btnLimiar = tk.Button(janela, text = "Limiariza imagem", bg = "#7E7E7E", fg = "#ffffff", font = ("Calibri", 10), command = lambda : tira_limiar(False))
     btnLimiarInvertido = tk.Button(janela, text = "Limiariza imagem - invertido ", bg = "#7E7E7E", fg = "#ffffff", font = ("Calibri", 10), command = lambda : tira_limiar(True))
     btnRecortaDigitos = tk.Button(janela, text = "Recortar dígitos", bg = "#7E7E7E", fg = "#ffffff", font = ("Calibri", 10), command = lambda : acha_contorno())
-    btnRotImagem = tk.Button(janela, text = "Rotacionar imagem", bg = "#7E7E7E", fg = "#ffffff", font = ("Calibri", 10), command = lambda : rotaciona_imagem())
+    # btnRotImagem = tk.Button(janela, text = "Rotacionar imagem", bg = "#7E7E7E", fg = "#ffffff", font = ("Calibri", 10), command = lambda : rotaciona_imagem())
     btnRodarSVM = tk.Button(janela, text = "Rodar SVM", bg = "#7E7E7E", fg = "#ffffff", font = ("Calibri", 10), command = lambda : roda_svm())
     btnRodarMLP = tk.Button(janela, text = "Rodar MLP", bg = "#7E7E7E", fg = "#ffffff", font = ("Calibri", 10), command = lambda : roda_mlp())
 
@@ -207,7 +213,7 @@ def inicializa_janela():
     btnLimiar.place(x = 130, y = 20)
     btnLimiarInvertido.place(x = 250, y = 20)
     btnRecortaDigitos.place(x = 430, y = 20)
-    btnRotImagem.place(x = 540, y = 20)
+    # btnRotImagem.place(x = 540, y = 20)
     btnRodarSVM.place(x = 670, y = 20)
     btnRodarMLP.place(x = 755, y = 20)
 
